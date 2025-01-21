@@ -1,0 +1,58 @@
+ Data Migration to Sanity CMS
+Sanity CMS requires data to be in a specific schema format. You've already linked to the schema files for the product and category. Now, let's write a migration script that fetches data from the API and sends it to your Sanity CMS.
+
+First, install the Sanity client:
+
+bash
+
+npm install @sanity/client
+Now, set up the Sanity client in your migration script:
+
+js
+
+// lib/sanityClient.js
+import sanityClient from '@sanity/client';
+
+const client = sanityClient({
+  projectId: 'your-project-id',
+  dataset: 'production',
+  useCdn: true, // Use the CDN for faster access to public data
+});
+
+export default client;
+Then, create a script that will handle the migration:
+
+js
+
+// scripts/migrateData.js
+import fetch from 'node-fetch';
+import client from '../lib/sanityClient';
+
+const fetchData = async () => {
+  const res = await fetch('https://hackathon-apis.vercel.app/api/products');
+  return await res.json();
+};
+
+const migrateData = async () => {
+  const products = await fetchData();
+
+  for (const product of products) {
+    const doc = {
+      _type: 'product',
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      imageUrl: product.imageUrl,
+    };
+
+    try {
+      await client.createOrReplace(doc);
+      console.log(`Product ${product.name} migrated successfully`);
+    } catch (err) {
+      console.error('Error migrating product:', err);
+    }
+  }
+};
+
+migrateData();
+This script will fetch data from the API and insert it into your Sanity CMS. You can extend it for categories or other entities as per your schema.
